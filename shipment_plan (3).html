@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipment Plan - Shipment Pairs + POS Materials</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+        .card-header h1 { font-size: 24px; margin-bottom: 5px; }
+        .card-header p { opacity: 0.9; font-size: 14px; }
+        .card-body { padding: 30px; }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+        }
+        .config-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .method-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .method-tab {
+            background: #e9ecef;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.2s;
+        }
+        .method-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .method-tab:hover:not(.active) {
+            background: #dee2e6;
+        }
+        .method-content { display: none; }
+        .method-content.active { display: block; }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f0f4ff;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            background: #e0e8ff;
+            border-color: #764ba2;
+        }
+        .drop-zone .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .drop-zone p {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .drop-zone .hint {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+        .btn-browse {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-browse:hover { background: #764ba2; }
+
+        .paste-area {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        .paste-area:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-load-paste {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-load-paste:hover { background: #218838; }
+
+        .gsheet-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+        .gsheet-grid .form-group { margin-bottom: 0; }
+        .gsheet-grid .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+        }
+        .gsheet-grid input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .gsheet-grid input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-load-gsheet {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            height: fit-content;
+        }
+        .btn-load-gsheet:hover { background: #764ba2; }
+
+        .sheet-info {
+            margin-top: 12px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #333;
+        }
+        .sheet-info strong { color: #667eea; }
+        .sheet-info a { color: #667eea; }
+
+        #officeCount {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+            color: #6c757d;
+        }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #667eea;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .shipment-pairs {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .pair-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .pair-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .pair-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .pair-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .remove-pair-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .download-pair-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .two-columns-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .pickup-box, .delivery-box {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+        }
+        .box-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .pickup-box .box-title { color: #28a745; }
+        .delivery-box .box-title { color: #dc3545; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .info-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .info-text strong { color: #333; }
+        .add-pair-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .pos-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .pos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .pos-header h3 { color: #667eea; }
+        .add-pos-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .pos-table-container { overflow-x: auto; }
+        .pos-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .pos-table th, .pos-table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .pos-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        .pos-table td { background: white; }
+        .pos-table select {
+            width: 100%;
+            padding: 6px;
+            font-size: 12px;
+        }
+        .pos-table input {
+            width: 100%;
+            padding: 6px;
+            font-size: 12px;
+        }
+        .remove-pos-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .pos-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .pos-summary-item { text-align: center; }
+        .pos-summary-item label {
+            font-size: 12px;
+            color: #6c757d;
+            display: block;
+        }
+        .pos-summary-item .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        .summary-box {
+            background: #e7f3ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 900px) {
+            .two-columns-pair { grid-template-columns: 1fr; }
+            .pos-summary { flex-direction: column; }
+            .gsheet-grid { grid-template-columns: 1fr; }
+            .pair-actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>📦 SHIPMENT PLAN</h1>
+                <p>Shipment Pairs (Pickup → Delivery) + POS & Marketing Materials</p>
+            </div>
+            <div class="card-body">
+                <div class="config-section">
+                    <h3>🔗 Load Office Data</h3>
+                    <div class="method-tabs">
+                        <button class="method-tab active" onclick="switchMethod('csv')">📁 Upload CSV File</button>
+                        <button class="method-tab" onclick="switchMethod('paste')">📋 Paste Data</button>
+                        <button class="method-tab" onclick="switchMethod('gsheet')">📊 Google Sheet (API)</button>
+                    </div>
+
+                    <div id="method-csv" class="method-content active">
+                        <div class="drop-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+                            <div class="icon">📁</div>
+                            <p><strong>Click to browse</strong> or drag & drop your CSV file here</p>
+                            <p class="hint">Your CSV should have: Office Name, Address, Phone, Contact Person</p>
+                            <button class="btn-browse">Choose File</button>
+                            <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(this)">
+                        </div>
+                        <div class="sheet-info" style="margin-top: 10px;">
+                            <strong>How to create your CSV:</strong><br>
+                            1. Open Excel or Google Sheets<br>
+                            2. Create columns: <strong>A: Office Name | B: Address | C: Phone | D: Contact Person</strong><br>
+                            3. Save / Download as <strong>.csv</strong> file<br>
+                            4. Upload it here — done!
+                        </div>
+                    </div>
+
+                    <div id="method-paste" class="method-content">
+                        <p style="font-size: 13px; margin-bottom: 8px; color: #333;">Paste your data below. Use <strong>TAB</strong> to separate columns and <strong>ENTER</strong> for new rows.</p>
+                        <textarea class="paste-area" id="pasteData" placeholder="Office Name	Address	Phone	Contact Person
+Central Market	123 Main St	08012345678	John Doe
+Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
+                        <button class="btn-load-paste" onclick="loadFromPaste()">Load Pasted Data</button>
+                        <div class="sheet-info" style="margin-top: 10px;">
+                            <strong>Format:</strong> Each line = one office. Columns separated by TAB.<br>
+                            You can copy directly from Excel or Google Sheets and paste here.
+                        </div>
+                    </div>
+
+                    <div id="method-gsheet" class="method-content">
+                        <div class="gsheet-grid">
+                            <div class="form-group">
+                                <label>Google Sheet ID</label>
+                                <input type="text" id="sheetId" placeholder="Paste your Google Sheet ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Google API Key</label>
+                                <input type="text" id="apiKey" placeholder="Paste your Google API Key">
+                            </div>
+                            <button class="btn-load-gsheet" onclick="loadFromGoogleSheet()">Load Offices</button>
+                        </div>
+                        <div class="sheet-info">
+                            <strong>Sheet Format:</strong> Columns: A: Office Name | B: Address | C: Phone | D: Contact Person. Sheet must be publicly viewable.
+                            <a href="#" onclick="showSetupHelp(); return false;" style="color: #667eea;">Need help?</a>
+                        </div>
+                    </div>
+
+                    <div id="officeCount"></div>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('shipment')">🚚 Shipment Pairs</button>
+                    <button class="tab-btn" onclick="switchTab('pos')">📊 POS & Marketing Materials</button>
+                </div>
+
+                <div id="shipmentTab" class="tab-content active">
+                    <div class="shipment-pairs" id="shipmentPairsContainer"></div>
+                    <button class="add-pair-btn" onclick="addShipmentPair()">+ Add New Shipment Pair</button>
+                    <div class="summary-box">
+                        <div class="summary-row">
+                            <span>Number of Shipment Pairs:</span>
+                            <strong id="pairCount">0</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total CTN Quantity:</span>
+                            <strong id="totalCtn">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="posTab" class="tab-content">
+                    <div class="pos-section">
+                        <div class="pos-header">
+                            <h3>📊 Point of Sale (POS) Materials by Market</h3>
+                            <button class="add-pos-btn" onclick="addPosRow()">+ Add Market</button>
+                        </div>
+                        <div class="pos-table-container">
+                            <table class="pos-table" id="posTable">
+                                <thead>
+                                    <tr>
+                                        <th>Market Office</th>
+                                        <th>Brand New Spos</th>
+                                        <th>4 Fold Flyer</th>
+                                        <th>TN Stickers</th>
+                                        <th>Repaired Spos</th>
+                                        <th style="width: 60px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="posTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="pos-summary" id="posSummary">
+                            <div class="pos-summary-item">
+                                <label>Total Brand New Spos</label>
+                                <div class="value" id="totalNewSpos">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total 4 Fold Flyer</label>
+                                <div class="value" id="totalFlyer">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total TN Stickers</label>
+                                <div class="value" id="totalStickers">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total Repaired Spos</label>
+                                <div class="value" id="totalRepaired">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="downloadFullPlan()">
+                        📄 Download Full Plan (Excel)
+                    </button>
+                    <button class="btn btn-success" onclick="printFullPlan()">
+                        🖨️ Print / Save as PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetAll()">
+                        🔄 Reset All
+                    </button>
+                </div>
+
+                <div id="message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="setupHelp" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 600px; max-height: 80vh; overflow-y: auto; margin: 20px;">
+            <h2 style="color: #667eea; margin-bottom: 15px;">How to Set Up Google Sheets Connection</h2>
+            <div style="font-size: 14px; line-height: 1.6; color: #333;">
+                <h4 style="color: #764ba2; margin-top: 15px;">Step 1: Create Your Google Sheet</h4>
+                <p>Create a new Google Sheet with this exact column structure in the first sheet (Sheet1):</p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li><strong>Column A:</strong> Office Name</li>
+                    <li><strong>Column B:</strong> Address</li>
+                    <li><strong>Column C:</strong> Phone</li>
+                    <li><strong>Column D:</strong> Contact Person</li>
+                </ul>
+                <p>Row 1 should be headers. Data starts from Row 2.</p>
+                <h4 style="color: #764ba2; margin-top: 15px;">Step 2: Make Sheet Public</h4>
+                <p>Click <strong>Share</strong> → Change to <strong>Anyone with the link can view</strong>.</p>
+                <h4 style="color: #764ba2; margin-top: 15px;">Step 3: Get Sheet ID</h4>
+                <p>Copy the long string from your sheet URL:<br>
+                <code style="background: #f4f4f4; padding: 4px; border-radius: 4px;">https://docs.google.com/spreadsheets/d/<strong>YOUR_SHEET_ID</strong>/edit</code></p>
+                <h4 style="color: #764ba2; margin-top: 15px;">Step 4: Get API Key</h4>
+                <p>1. Go to <a href="https://console.cloud.google.com/" target="_blank" style="color: #667eea;">Google Cloud Console</a><br>
+                2. Create a new project<br>
+                3. Enable <strong>Google Sheets API</strong><br>
+                4. Go to Credentials → Create API Key<br>
+                5. Copy the API Key</p>
+                <h4 style="color: #764ba2; margin-top: 15px;">Step 5: Connect</h4>
+                <p>Paste both values above and click <strong>Load Offices</strong>.</p>
+            </div>
+            <button onclick="document.getElementById('setupHelp').style.display='none'" style="margin-top: 20px; background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script>
+        let offices = [];
+        let posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 }];
+        let shipmentPairs = [];
+
+        const THIN_BORDER = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+
+        const HEADER_FILL = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFD9E1F2' }
+        };
+
+        const TITLE_FILL = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFB4C7E7' }
+        };
+
+        const TOTAL_FILL = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF2F2F2' }
+        };
+
+        function applyBorder(cell) {
+            cell.border = THIN_BORDER;
+        }
+
+        function applyHeaderStyle(cell) {
+            cell.font = { bold: true, size: 11, name: 'Calibri' };
+            cell.fill = HEADER_FILL;
+            cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+            applyBorder(cell);
+        }
+
+        function applyTitleStyle(cell) {
+            cell.font = { bold: true, size: 14, name: 'Calibri' };
+            cell.fill = TITLE_FILL;
+            cell.alignment = { horizontal: 'center', vertical: 'center' };
+            applyBorder(cell);
+        }
+
+        function applyDataStyle(cell, align) {
+            cell.font = { size: 11, name: 'Calibri' };
+            cell.alignment = { horizontal: align || 'left', vertical: 'center', wrapText: true };
+            applyBorder(cell);
+        }
+
+        function applyTotalStyle(cell, align) {
+            cell.font = { bold: true, size: 11, name: 'Calibri' };
+            cell.fill = TOTAL_FILL;
+            cell.alignment = { horizontal: align || 'left', vertical: 'center' };
+            applyBorder(cell);
+        }
+
+        // ============ METHOD SWITCHING ============
+        function switchMethod(method) {
+            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.method-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('method-' + method).classList.add('active');
+        }
+
+        // ============ CSV UPLOAD ============
+        function handleCSVUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            parseCSVFile(file);
+        }
+
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) parseCSVFile(files[0]);
+        });
+
+        function parseCSVFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseCSVText(e.target.result, file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSVText(text, sourceName) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) {
+                showMessage("CSV file appears empty or has no data rows.", "alert-warning");
+                return;
+            }
+            const firstLine = lines[0].toLowerCase();
+            const hasHeader = firstLine.includes('office') || firstLine.includes('name') || firstLine.includes('address');
+            const startIndex = hasHeader ? 1 : 0;
+            offices = [];
+            for (let i = startIndex; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                if (cols[0] && cols[0].trim() !== '') {
+                    offices.push({
+                        name: cols[0] || '',
+                        address: cols[1] || '',
+                        phone: cols[2] || '',
+                        contact: cols[3] || ''
+                    });
+                }
+            }
+            saveOffices();
+            document.getElementById('officeCount').innerHTML = `✅ ${offices.length} offices loaded from ${sourceName || 'CSV'}`;
+            showMessage(`Successfully loaded ${offices.length} offices!`, "alert-success");
+            renderShipmentPairs();
+            renderPosTable();
+        }
+
+        // ============ PASTE DATA ============
+        function loadFromPaste() {
+            const text = document.getElementById('pasteData').value.trim();
+            if (!text) {
+                showMessage("Please paste some data first.", "alert-warning");
+                return;
+            }
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length === 0) {
+                showMessage("No data found.", "alert-warning");
+                return;
+            }
+            const firstLine = lines[0];
+            const delimiter = firstLine.includes('\t') ? '\t' : ',';
+            const firstLower = firstLine.toLowerCase();
+            const hasHeader = firstLower.includes('office') || firstLower.includes('name');
+            const startIndex = hasHeader ? 1 : 0;
+            offices = [];
+            for (let i = startIndex; i < lines.length; i++) {
+                const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+                if (cols[0] && cols[0].trim() !== '') {
+                    offices.push({
+                        name: cols[0] || '',
+                        address: cols[1] || '',
+                        phone: cols[2] || '',
+                        contact: cols[3] || ''
+                    });
+                }
+            }
+            saveOffices();
+            document.getElementById('officeCount').innerHTML = `✅ ${offices.length} offices loaded from pasted data`;
+            showMessage(`Successfully loaded ${offices.length} offices from pasted data!`, "alert-success");
+            renderShipmentPairs();
+            renderPosTable();
+        }
+
+        // ============ GOOGLE SHEETS API ============
+        function loadFromGoogleSheet() {
+            const sheetId = document.getElementById('sheetId').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!sheetId || !apiKey) {
+                showMessage("Please enter both Sheet ID and API Key", "alert-warning");
+                return;
+            }
+            const range = 'Sheet1!A1:D1000';
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+            showMessage("Loading offices from Google Sheet...", "alert-info");
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        showMessage("Error: " + data.error.message, "alert-warning");
+                        return;
+                    }
+                    const rows = data.values;
+                    if (!rows || rows.length < 2) {
+                        showMessage("No data found in sheet.", "alert-warning");
+                        return;
+                    }
+                    offices = rows.slice(1).map(row => ({
+                        name: row[0] || '',
+                        address: row[1] || '',
+                        phone: row[2] || '',
+                        contact: row[3] || ''
+                    })).filter(o => o.name.trim() !== '');
+                    saveOffices();
+                    document.getElementById('officeCount').innerHTML = `✅ ${offices.length} offices loaded from Google Sheet`;
+                    showMessage(`Successfully loaded ${offices.length} offices!`, "alert-success");
+                    renderShipmentPairs();
+                    renderPosTable();
+                })
+                .catch(err => {
+                    showMessage("Failed: " + err.message, "alert-warning");
+                });
+        }
+
+        function showSetupHelp() {
+            document.getElementById('setupHelp').style.display = 'flex';
+        }
+
+        function saveOffices() {
+            localStorage.setItem('shipment_offices', JSON.stringify(offices));
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('shipment_offices');
+            if (saved) {
+                offices = JSON.parse(saved);
+                document.getElementById('officeCount').innerHTML = `✅ ${offices.length} offices loaded from cache`;
+            }
+            const savedSheetId = localStorage.getItem('sheet_id');
+            const savedApiKey = localStorage.getItem('api_key');
+            if (savedSheetId) document.getElementById('sheetId').value = savedSheetId;
+            if (savedApiKey) document.getElementById('apiKey').value = savedApiKey;
+        }
+
+        // ============ TABS ============
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            if (tab === 'shipment') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('shipmentTab').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('posTab').classList.add('active');
+            }
+        }
+
+        // ============ SHIPMENT PAIRS ============
+        function getOfficeOptions(selectedOfficeName) {
+            if (offices.length === 0) {
+                return '<option value="">-- Load office data first --</option>';
+            }
+            let options = '<option value="">-- Select office --</option>';
+            offices.forEach((office, idx) => {
+                const selected = selectedOfficeName === office.name ? 'selected' : '';
+                options += `<option value="${idx}" ${selected}>${office.name}</option>`;
+            });
+            return options;
+        }
+
+        function getPosOfficeOptions(selectedOfficeName) {
+            if (offices.length === 0) {
+                return '<option value="">-- Load offices first --</option>';
+            }
+            let options = '<option value="">-- Select market --</option>';
+            offices.forEach((office) => {
+                const selected = selectedOfficeName === office.name ? 'selected' : '';
+                options += `<option value="${office.name}" ${selected}>${office.name}</option>`;
+            });
+            return options;
+        }
+
+        function getOfficeByIndex(index) {
+            if (index === "" || index === null || offices.length === 0) return null;
+            const idx = parseInt(index);
+            if (idx < 0 || idx >= offices.length) return null;
+            return offices[idx];
+        }
+
+        function addShipmentPair() {
+            const newId = Date.now();
+            shipmentPairs.push({
+                id: newId,
+                pickup: { officeIndex: '', officeName: '', officeAddress: '', officePhone: '', contactPerson: '' },
+                delivery: { officeIndex: '', officeName: '', officeAddress: '', officePhone: '', contactPerson: '', ctn: 1 }
+            });
+            renderShipmentPairs();
+        }
+
+        function removeShipmentPair(id) {
+            shipmentPairs = shipmentPairs.filter(pair => pair.id !== id);
+            renderShipmentPairs();
+        }
+
+        function updatePickup(pairId, field, value) {
+            const pair = shipmentPairs.find(p => p.id === pairId);
+            if (!pair) return;
+            if (field === 'officeIndex') {
+                const selectedOffice = getOfficeByIndex(value);
+                if (selectedOffice) {
+                    pair.pickup.officeIndex = value;
+                    pair.pickup.officeName = selectedOffice.name;
+                    pair.pickup.officeAddress = selectedOffice.address;
+                    pair.pickup.officePhone = selectedOffice.phone;
+                    pair.pickup.contactPerson = selectedOffice.contact;
+                } else {
+                    pair.pickup = { officeIndex: '', officeName: '', officeAddress: '', officePhone: '', contactPerson: '' };
+                }
+            } else {
+                pair.pickup[field] = value;
+            }
+            renderShipmentPairs();
+            updateShipmentSummary();
+        }
+
+        function updateDelivery(pairId, field, value) {
+            const pair = shipmentPairs.find(p => p.id === pairId);
+            if (!pair) return;
+            if (field === 'officeIndex') {
+                const selectedOffice = getOfficeByIndex(value);
+                if (selectedOffice) {
+                    pair.delivery.officeIndex = value;
+                    pair.delivery.officeName = selectedOffice.name;
+                    pair.delivery.officeAddress = selectedOffice.address;
+                    pair.delivery.officePhone = selectedOffice.phone;
+                    pair.delivery.contactPerson = selectedOffice.contact;
+                } else {
+                    pair.delivery = { officeIndex: '', officeName: '', officeAddress: '', officePhone: '', contactPerson: '', ctn: 1 };
+                }
+            } else {
+                pair.delivery[field] = value;
+            }
+            renderShipmentPairs();
+            updateShipmentSummary();
+        }
+
+        function renderShipmentPairs() {
+            const container = document.getElementById('shipmentPairsContainer');
+            if (shipmentPairs.length === 0) {
+                container.innerHTML = '<div class="alert alert-warning" style="text-align: center;">No shipment pairs added. Click "+ Add New Shipment Pair" to start.</div>';
+                document.getElementById('pairCount').innerHTML = '0';
+                document.getElementById('totalCtn').innerHTML = '0';
+                return;
+            }
+            let html = '';
+            shipmentPairs.forEach((pair, idx) => {
+                html += `
+                    <div class="pair-card">
+                        <div class="pair-header">
+                            <span class="pair-number">📋 Shipment Pair #${idx + 1}</span>
+                            <div class="pair-actions">
+                                <button class="download-pair-btn" onclick="downloadSinglePair(${pair.id})">📥 Download</button>
+                                <button class="remove-pair-btn" onclick="removeShipmentPair(${pair.id})">Remove Pair</button>
+                            </div>
+                        </div>
+                        <div class="two-columns-pair">
+                            <div class="pickup-box">
+                                <div class="box-title">🚚 PICKUP OFFICE</div>
+                                <div class="form-group">
+                                    <label>Select Pickup Office *</label>
+                                    <select onchange="updatePickup(${pair.id}, 'officeIndex', this.value)">
+                                        ${getOfficeOptions(pair.pickup.officeName)}
+                                    </select>
+                                </div>
+                                ${pair.pickup.officeName ? `
+                                    <div class="info-text">
+                                        <strong>📍 Address:</strong> ${escapeHtml(pair.pickup.officeAddress || 'Not provided')}<br>
+                                        <strong>📞 Phone:</strong> ${escapeHtml(pair.pickup.officePhone || 'Not provided')}<br>
+                                        <strong>👤 Contact:</strong> ${escapeHtml(pair.pickup.contactPerson || 'Not provided')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="delivery-box">
+                                <div class="box-title">📦 DELIVERY OFFICE</div>
+                                <div class="form-group">
+                                    <label>Select Delivery Office *</label>
+                                    <select onchange="updateDelivery(${pair.id}, 'officeIndex', this.value)">
+                                        ${getOfficeOptions(pair.delivery.officeName)}
+                                    </select>
+                                </div>
+                                ${pair.delivery.officeName ? `
+                                    <div class="info-text">
+                                        <strong>📍 Address:</strong> ${escapeHtml(pair.delivery.officeAddress || 'Not provided')}<br>
+                                        <strong>📞 Phone:</strong> ${escapeHtml(pair.delivery.officePhone || 'Not provided')}<br>
+                                        <strong>👤 Contact:</strong> ${escapeHtml(pair.delivery.contactPerson || 'Not provided')}
+                                    </div>
+                                ` : ''}
+                                <div class="form-group" style="margin-top: 15px;">
+                                    <label>CTN Quantity</label>
+                                    <input type="number" value="${pair.delivery.ctn}" min="1" 
+                                           onchange="updateDelivery(${pair.id}, 'ctn', parseInt(this.value))">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            updateShipmentSummary();
+        }
+
+        function updateShipmentSummary() {
+            document.getElementById('pairCount').innerHTML = shipmentPairs.length;
+            document.getElementById('totalCtn').innerHTML = shipmentPairs.reduce((sum, p) => sum + (p.delivery.ctn || 0), 0);
+        }
+
+        // ============ POS ============
+        function renderPosTable() {
+            const tbody = document.getElementById('posTableBody');
+            tbody.innerHTML = '';
+            posData.forEach((item, index) => {
+                const row = tbody.insertRow();
+                const marketCell = row.insertCell(0);
+                const select = document.createElement('select');
+                select.innerHTML = getPosOfficeOptions(item.market);
+                select.onchange = function() { updatePosField(index, 'market', this.value); };
+                marketCell.appendChild(select);
+                row.insertCell(1).innerHTML = `<input type="number" value="${item.newSpos}" onchange="updatePosField(${index}, 'newSpos', parseInt(this.value) || 0)">`;
+                row.insertCell(2).innerHTML = `<input type="number" value="${item.flyer}" onchange="updatePosField(${index}, 'flyer', parseInt(this.value) || 0)">`;
+                row.insertCell(3).innerHTML = `<input type="number" value="${item.stickers}" onchange="updatePosField(${index}, 'stickers', parseInt(this.value) || 0)">`;
+                row.insertCell(4).innerHTML = `<input type="number" value="${item.repaired}" onchange="updatePosField(${index}, 'repaired', parseInt(this.value) || 0)">`;
+                row.insertCell(5).innerHTML = `<button class="remove-pos-btn" onclick="removePosRow(${index})">Remove</button>`;
+            });
+            updatePosSummary();
+        }
+
+        function updatePosField(index, field, value) {
+            if (posData[index]) {
+                posData[index][field] = value;
+                renderPosTable();
+            }
+        }
+
+        function addPosRow() {
+            posData.push({ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 });
+            renderPosTable();
+        }
+
+        function removePosRow(index) {
+            posData.splice(index, 1);
+            renderPosTable();
+        }
+
+        function updatePosSummary() {
+            let totalNew = 0, totalFlyer = 0, totalStickers = 0, totalRepaired = 0;
+            posData.forEach(item => {
+                totalNew += item.newSpos || 0;
+                totalFlyer += item.flyer || 0;
+                totalStickers += item.stickers || 0;
+                totalRepaired += item.repaired || 0;
+            });
+            document.getElementById('totalNewSpos').innerHTML = totalNew;
+            document.getElementById('totalFlyer').innerHTML = totalFlyer;
+            document.getElementById('totalStickers').innerHTML = totalStickers;
+            document.getElementById('totalRepaired').innerHTML = totalRepaired;
+        }
+
+        // ============ DOWNLOAD ============
+        function generateDateString() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        }
+
+        function sanitizeFilename(text) {
+            if (!text) return 'unknown';
+            return text.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').substring(0, 30);
+        }
+
+        async function buildShipmentWorksheet(workbook, dataPairs) {
+            const ws = workbook.addWorksheet('Sheet1');
+
+            ws.columns = [
+                { width: 6 },   // A: S/N
+                { width: 14 },  // B: DATE
+                { width: 28 },  // C: CITY NAME
+                { width: 55 },  // D: PICK UP ADDRESS
+                { width: 18 },  // E: PICK UP CONTACT
+                { width: 22 },  // F: RECEIVER'S NAME
+                { width: 22 },  // G: RECEIVER'S CONTACT
+                { width: 55 },  // H: DELIVERY ADDRESS
+                { width: 12 }   // I: CARTON NO.
+            ];
+
+            // Row 5: Title
+            ws.mergeCells('A5:I5');
+            const titleCell = ws.getCell('A5');
+            titleCell.value = 'CITY INFORMATION';
+            applyTitleStyle(titleCell);
+
+            // Row 6: Headers
+            const headers = ['S/N', 'DATE', 'CITY NAME', 'PICK UP ADDRESS', 'PICK UP CONTACT', "RECEIVER'S NAME", "RECEIVER'S CONTACT", 'DELIVERY ADDRESS', 'CARTON NO.'];
+            headers.forEach((h, i) => {
+                const cell = ws.getCell(6, i + 1);
+                cell.value = h;
+                applyHeaderStyle(cell);
+            });
+            ws.getRow(6).height = 30;
+
+            // Data rows
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            let totalCtn = 0;
+
+            dataPairs.forEach((pair, idx) => {
+                const rowNum = 7 + idx;
+                const ctn = pair.delivery.ctn || 0;
+                totalCtn += ctn;
+
+                const rowData = [
+                    idx + 1,
+                    dateStr,
+                    pair.delivery.officeName || '',
+                    pair.pickup.officeAddress || '',
+                    pair.pickup.officePhone || '',
+                    pair.delivery.contactPerson || '',
+                    pair.delivery.officePhone || '',
+                    pair.delivery.officeAddress || '',
+                    ctn
+                ];
+
+                rowData.forEach((val, colIdx) => {
+                    const cell = ws.getCell(rowNum, colIdx + 1);
+                    cell.value = val;
+                    const align = (colIdx === 0 || colIdx === 8) ? 'center' : 'left';
+                    applyDataStyle(cell, align);
+                });
+
+                ws.getRow(rowNum).height = 35;
+            });
+
+            // Total row
+            const totalRowNum = 7 + dataPairs.length;
+            for (let c = 1; c <= 9; c++) {
+                const cell = ws.getCell(totalRowNum, c);
+                if (c === 2) {
+                    cell.value = 'TOTAL';
+                    applyTotalStyle(cell, 'center');
+                } else if (c === 9) {
+                    cell.value = totalCtn;
+                    applyTotalStyle(cell, 'center');
+                } else {
+                    cell.value = '';
+                    applyTotalStyle(cell, 'center');
+                }
+            }
+            ws.getRow(totalRowNum).height = 25;
+
+            return ws;
+        }
+
+        async function buildPosWorksheet(workbook, dataPos) {
+            const ws = workbook.addWorksheet('Sheet2');
+
+            ws.columns = [
+                { width: 6 },   // A: S/N
+                { width: 38 },  // B: MARKET OFFICE
+                { width: 18 },  // C: BRAND NEW SPOS
+                { width: 16 },  // D: 4 FOLD FLYER
+                { width: 15 },  // E: TN STICKERS
+                { width: 16 }   // F: REPAIRED SPOS
+            ];
+
+            // Row 5: Title
+            ws.mergeCells('A5:F5');
+            const titleCell = ws.getCell('A5');
+            titleCell.value = 'POS & MARKETING MATERIALS';
+            applyTitleStyle(titleCell);
+
+            // Row 6: Headers
+            const headers = ['S/N', 'MARKET OFFICE', 'BRAND NEW SPOS', '4 FOLD FLYER', 'TN STICKERS', 'REPAIRED SPOS'];
+            headers.forEach((h, i) => {
+                const cell = ws.getCell(6, i + 1);
+                cell.value = h;
+                applyHeaderStyle(cell);
+            });
+            ws.getRow(6).height = 30;
+
+            // Data rows
+            let totalNew = 0, totalFlyer = 0, totalStickers = 0, totalRepaired = 0;
+            let sn = 1;
+
+            dataPos.forEach((pos) => {
+                if (!pos.market) return;
+                const rowNum = 6 + sn;
+
+                totalNew += pos.newSpos || 0;
+                totalFlyer += pos.flyer || 0;
+                totalStickers += pos.stickers || 0;
+                totalRepaired += pos.repaired || 0;
+
+                const rowData = [
+                    sn,
+                    pos.market,
+                    pos.newSpos || 0,
+                    pos.flyer || 0,
+                    pos.stickers || 0,
+                    pos.repaired || 0
+                ];
+
+                rowData.forEach((val, colIdx) => {
+                    const cell = ws.getCell(rowNum, colIdx + 1);
+                    cell.value = val;
+                    const align = (colIdx === 0 || colIdx >= 2) ? 'center' : 'left';
+                    applyDataStyle(cell, align);
+                });
+
+                ws.getRow(rowNum).height = 25;
+                sn++;
+            });
+
+            // Total row
+            const totalRowNum = 6 + sn;
+            for (let c = 1; c <= 6; c++) {
+                const cell = ws.getCell(totalRowNum, c);
+                if (c === 2) {
+                    cell.value = 'TOTAL';
+                    applyTotalStyle(cell, 'center');
+                } else if (c >= 3) {
+                    const val = [totalNew, totalFlyer, totalStickers, totalRepaired][c - 3];
+                    cell.value = val;
+                    applyTotalStyle(cell, 'center');
+                } else {
+                    cell.value = '';
+                    applyTotalStyle(cell, 'center');
+                }
+            }
+            ws.getRow(totalRowNum).height = 25;
+
+            return ws;
+        }
+
+        async function downloadSinglePair(pairId) {
+            const pair = shipmentPairs.find(p => p.id === pairId);
+            if (!pair || !pair.pickup.officeName || !pair.delivery.officeName) {
+                showMessage("Please select both pickup and delivery offices first!", "alert-warning");
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            await buildShipmentWorksheet(workbook, [pair]);
+
+            const pickupName = sanitizeFilename(pair.pickup.officeName);
+            const deliveryName = sanitizeFilename(pair.delivery.officeName);
+            const dateStr = generateDateString();
+            const filename = `shipment_from_${pickupName}_to_${deliveryName}_${dateStr}.xlsx`;
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showMessage(`Downloaded: ${filename}`, "alert-success");
+        }
+
+        async function downloadFullPlan() {
+            for (const pair of shipmentPairs) {
+                if (!pair.pickup.officeName || !pair.delivery.officeName) {
+                    showMessage("Please ensure all pickup and delivery offices are fully selected!", "alert-warning");
+                    return;
+                }
+            }
+            if (shipmentPairs.length === 0) {
+                showMessage("Please add at least one complete shipment pair!", "alert-warning");
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            await buildShipmentWorksheet(workbook, shipmentPairs);
+
+            const posWithData = posData.filter(p => p.market);
+            if (posWithData.length > 0) {
+                await buildPosWorksheet(workbook, posData);
+            }
+
+            let filename;
+            const dateStr = generateDateString();
+            if (shipmentPairs.length === 1) {
+                const pickupName = sanitizeFilename(shipmentPairs[0].pickup.officeName);
+                const deliveryName = sanitizeFilename(shipmentPairs[0].delivery.officeName);
+                filename = `shipment_from_${pickupName}_to_${deliveryName}_${dateStr}.xlsx`;
+            } else {
+                filename = `shipment_plan_${dateStr}.xlsx`;
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showMessage(`Downloaded: ${filename}`, "alert-success");
+        }
+
+        function printFullPlan() {
+            const printWindow = window.open('', '_blank');
+            let shipmentHtml = '';
+            for (let i = 0; i < shipmentPairs.length; i++) {
+                const pair = shipmentPairs[i];
+                if (pair.pickup.officeName && pair.delivery.officeName) {
+                    shipmentHtml += `
+                        <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 20px; border-left: 5px solid #667eea;">
+                            <h4>Shipment Pair #${i + 1}</h4>
+                            <div style="background: #d4edda; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                <strong>PICKUP:</strong><br>
+                                Office: ${escapeHtml(pair.pickup.officeName)}<br>
+                                Address: ${escapeHtml(pair.pickup.officeAddress)}<br>
+                                Phone: ${escapeHtml(pair.pickup.officePhone)}<br>
+                                Contact: ${escapeHtml(pair.pickup.contactPerson)}
+                            </div>
+                            <div style="background: #f8d7da; padding: 10px; border-radius: 8px;">
+                                <strong>DELIVERY:</strong><br>
+                                Office: ${escapeHtml(pair.delivery.officeName)}<br>
+                                Address: ${escapeHtml(pair.delivery.officeAddress)}<br>
+                                Phone: ${escapeHtml(pair.delivery.officePhone)}<br>
+                                Contact: ${escapeHtml(pair.delivery.contactPerson)}<br>
+                                CTN: ${pair.delivery.ctn}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            let posHtml = '<table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
+            posHtml += '<tr style="background: #667eea; color: white;"><th>Market Office</th><th>Brand New Spos</th><th>4 Fold Flyer</th><th>TN Stickers</th><th>Repaired Spos</th></tr>';
+            for (const pos of posData) {
+                posHtml += `<tr><td>${escapeHtml(pos.market) || '-'}</td><td>${pos.newSpos}</td><td>${pos.flyer}</td><td>${pos.stickers}</td><td>${pos.repaired}</td></tr>`;
+            }
+            posHtml += '</table>';
+            printWindow.document.write(`
+                <html>
+                <head><title>Shipment Plan</title>
+                <style>body { font-family: Arial, sans-serif; padding: 20px; } h1 { color: #667eea; } h2 { color: #764ba2; margin-top: 30px; } .header { margin-bottom: 30px; } .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }</style>
+                </head>
+                <body>
+                    <h1>SHIPMENT PLAN</h1>
+                    <div class="header"><p><strong>Date:</strong> ${new Date().toLocaleString()}</p></div>
+                    <h2>SHIPMENT PAIRS</h2>
+                    ${shipmentHtml || '<p>No shipment pairs added.</p>'}
+                    <h2>POS & MARKETING MATERIALS</h2>
+                    ${posHtml}
+                    <div class="footer"><p>Generated from Shipment Plan System</p></div>
+                    <script>window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); }<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function resetAll() {
+            shipmentPairs = [];
+            posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 }];
+            renderShipmentPairs();
+            renderPosTable();
+            showMessage("All data has been reset", "alert-success");
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = msg;
+            msgDiv.className = `alert ${type}`;
+            msgDiv.style.display = 'block';
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 4000);
+        }
+
+        // Initialize
+        loadFromStorage();
+        shipmentPairs = [];
+        addShipmentPair();
+        renderPosTable();
+    </script>
+</body>
+</html>
