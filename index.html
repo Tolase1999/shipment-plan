@@ -600,6 +600,10 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                                         <th>4 Fold Flyer</th>
                                         <th>TN Stickers</th>
                                         <th>Repaired Spos</th>
+                                        <th>Faulty Smart</th>
+                                        <th>Faulty TPOS</th>
+                                        <th>Faulty MPOS</th>
+                                        <th>Repaired TPOS</th>
                                         <th style="width: 60px;">Action</th>
                                     </tr>
                                 </thead>
@@ -622,6 +626,22 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                             <div class="pos-summary-item">
                                 <label>Total Repaired Spos</label>
                                 <div class="value" id="totalRepaired">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total Faulty Smart</label>
+                                <div class="value" id="totalFaultySmart">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total Faulty TPOS</label>
+                                <div class="value" id="totalFaultyTpos">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total Faulty MPOS</label>
+                                <div class="value" id="totalFaultyMpos">0</div>
+                            </div>
+                            <div class="pos-summary-item">
+                                <label>Total Repaired TPOS</label>
+                                <div class="value" id="totalRepairedTpos">0</div>
                             </div>
                         </div>
                     </div>
@@ -678,7 +698,7 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script>
         let offices = [];
-        let posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 }];
+        let posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0, faultySmart: 0, faultyTpos: 0, faultyMpos: 0, repairedTpos: 0 }];
         let shipmentPairs = [];
 
         const THIN_BORDER = {
@@ -1089,7 +1109,11 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                 row.insertCell(2).innerHTML = `<input type="number" value="${item.flyer}" onchange="updatePosField(${index}, 'flyer', parseInt(this.value) || 0)">`;
                 row.insertCell(3).innerHTML = `<input type="number" value="${item.stickers}" onchange="updatePosField(${index}, 'stickers', parseInt(this.value) || 0)">`;
                 row.insertCell(4).innerHTML = `<input type="number" value="${item.repaired}" onchange="updatePosField(${index}, 'repaired', parseInt(this.value) || 0)">`;
-                row.insertCell(5).innerHTML = `<button class="remove-pos-btn" onclick="removePosRow(${index})">Remove</button>`;
+                row.insertCell(5).innerHTML = `<input type="number" value="${item.faultySmart || 0}" onchange="updatePosField(${index}, 'faultySmart', parseInt(this.value) || 0)">`;
+                row.insertCell(6).innerHTML = `<input type="number" value="${item.faultyTpos || 0}" onchange="updatePosField(${index}, 'faultyTpos', parseInt(this.value) || 0)">`;
+                row.insertCell(7).innerHTML = `<input type="number" value="${item.faultyMpos || 0}" onchange="updatePosField(${index}, 'faultyMpos', parseInt(this.value) || 0)">`;
+                row.insertCell(8).innerHTML = `<input type="number" value="${item.repairedTpos || 0}" onchange="updatePosField(${index}, 'repairedTpos', parseInt(this.value) || 0)">`;
+                row.insertCell(9).innerHTML = `<button class="remove-pos-btn" onclick="removePosRow(${index})">Remove</button>`;
             });
             updatePosSummary();
         }
@@ -1102,7 +1126,7 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
         }
 
         function addPosRow() {
-            posData.push({ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 });
+            posData.push({ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0, faultySmart: 0, faultyTpos: 0, faultyMpos: 0, repairedTpos: 0 });
             renderPosTable();
         }
 
@@ -1113,16 +1137,25 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
 
         function updatePosSummary() {
             let totalNew = 0, totalFlyer = 0, totalStickers = 0, totalRepaired = 0;
+            let totalFaultySmart = 0, totalFaultyTpos = 0, totalFaultyMpos = 0, totalRepairedTpos = 0;
             posData.forEach(item => {
                 totalNew += item.newSpos || 0;
                 totalFlyer += item.flyer || 0;
                 totalStickers += item.stickers || 0;
                 totalRepaired += item.repaired || 0;
+                totalFaultySmart += item.faultySmart || 0;
+                totalFaultyTpos += item.faultyTpos || 0;
+                totalFaultyMpos += item.faultyMpos || 0;
+                totalRepairedTpos += item.repairedTpos || 0;
             });
             document.getElementById('totalNewSpos').innerHTML = totalNew;
             document.getElementById('totalFlyer').innerHTML = totalFlyer;
             document.getElementById('totalStickers').innerHTML = totalStickers;
             document.getElementById('totalRepaired').innerHTML = totalRepaired;
+            document.getElementById('totalFaultySmart').innerHTML = totalFaultySmart;
+            document.getElementById('totalFaultyTpos').innerHTML = totalFaultyTpos;
+            document.getElementById('totalFaultyMpos').innerHTML = totalFaultyMpos;
+            document.getElementById('totalRepairedTpos').innerHTML = totalRepairedTpos;
         }
 
         // ============ DOWNLOAD ============
@@ -1227,17 +1260,21 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                 { width: 18 },  // C: BRAND NEW SPOS
                 { width: 16 },  // D: 4 FOLD FLYER
                 { width: 15 },  // E: TN STICKERS
-                { width: 16 }   // F: REPAIRED SPOS
+                { width: 16 },  // F: REPAIRED SPOS
+                { width: 16 },  // G: FAULTY SMART
+                { width: 16 },  // H: FAULTY TPOS
+                { width: 16 },  // I: FAULTY MPOS
+                { width: 16 }   // J: REPAIRED TPOS
             ];
 
             // Row 5: Title
-            ws.mergeCells('A5:F5');
+            ws.mergeCells('A5:J5');
             const titleCell = ws.getCell('A5');
             titleCell.value = 'POS & MARKETING MATERIALS';
             applyTitleStyle(titleCell);
 
             // Row 6: Headers
-            const headers = ['S/N', 'MARKET OFFICE', 'BRAND NEW SPOS', '4 FOLD FLYER', 'TN STICKERS', 'REPAIRED SPOS'];
+            const headers = ['S/N', 'MARKET OFFICE', 'BRAND NEW SPOS', '4 FOLD FLYER', 'TN STICKERS', 'REPAIRED SPOS', 'FAULTY SMART', 'FAULTY TPOS', 'FAULTY MPOS', 'REPAIRED TPOS'];
             headers.forEach((h, i) => {
                 const cell = ws.getCell(6, i + 1);
                 cell.value = h;
@@ -1247,6 +1284,7 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
 
             // Data rows
             let totalNew = 0, totalFlyer = 0, totalStickers = 0, totalRepaired = 0;
+            let totalFaultySmart = 0, totalFaultyTpos = 0, totalFaultyMpos = 0, totalRepairedTpos = 0;
             let sn = 1;
 
             dataPos.forEach((pos) => {
@@ -1257,6 +1295,10 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                 totalFlyer += pos.flyer || 0;
                 totalStickers += pos.stickers || 0;
                 totalRepaired += pos.repaired || 0;
+                totalFaultySmart += pos.faultySmart || 0;
+                totalFaultyTpos += pos.faultyTpos || 0;
+                totalFaultyMpos += pos.faultyMpos || 0;
+                totalRepairedTpos += pos.repairedTpos || 0;
 
                 const rowData = [
                     sn,
@@ -1264,7 +1306,11 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                     pos.newSpos || 0,
                     pos.flyer || 0,
                     pos.stickers || 0,
-                    pos.repaired || 0
+                    pos.repaired || 0,
+                    pos.faultySmart || 0,
+                    pos.faultyTpos || 0,
+                    pos.faultyMpos || 0,
+                    pos.repairedTpos || 0
                 ];
 
                 rowData.forEach((val, colIdx) => {
@@ -1280,14 +1326,14 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
 
             // Total row
             const totalRowNum = 6 + sn;
-            for (let c = 1; c <= 6; c++) {
+            for (let c = 1; c <= 10; c++) {
                 const cell = ws.getCell(totalRowNum, c);
                 if (c === 2) {
                     cell.value = 'TOTAL';
                     applyTotalStyle(cell, 'center');
                 } else if (c >= 3) {
-                    const val = [totalNew, totalFlyer, totalStickers, totalRepaired][c - 3];
-                    cell.value = val;
+                    const vals = [totalNew, totalFlyer, totalStickers, totalRepaired, totalFaultySmart, totalFaultyTpos, totalFaultyMpos, totalRepairedTpos];
+                    cell.value = vals[c - 3];
                     applyTotalStyle(cell, 'center');
                 } else {
                     cell.value = '';
@@ -1401,9 +1447,9 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
                 }
             }
             let posHtml = '<table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
-            posHtml += '<tr style="background: #667eea; color: white;"><th>Market Office</th><th>Brand New Spos</th><th>4 Fold Flyer</th><th>TN Stickers</th><th>Repaired Spos</th></tr>';
+            posHtml += '<tr style="background: #667eea; color: white;"><th>Market Office</th><th>Brand New Spos</th><th>4 Fold Flyer</th><th>TN Stickers</th><th>Repaired Spos</th><th>Faulty Smart</th><th>Faulty TPOS</th><th>Faulty MPOS</th><th>Repaired TPOS</th></tr>';
             for (const pos of posData) {
-                posHtml += `<tr><td>${escapeHtml(pos.market) || '-'}</td><td>${pos.newSpos}</td><td>${pos.flyer}</td><td>${pos.stickers}</td><td>${pos.repaired}</td></tr>`;
+                posHtml += `<tr><td>${escapeHtml(pos.market) || '-'}</td><td>${pos.newSpos}</td><td>${pos.flyer}</td><td>${pos.stickers}</td><td>${pos.repaired}</td><td>${pos.faultySmart || 0}</td><td>${pos.faultyTpos || 0}</td><td>${pos.faultyMpos || 0}</td><td>${pos.repairedTpos || 0}</td></tr>`;
             }
             posHtml += '</table>';
             printWindow.document.write(`
@@ -1428,7 +1474,7 @@ Branch Office	456 Side Rd	08087654321	Jane Smith"></textarea>
 
         function resetAll() {
             shipmentPairs = [];
-            posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0 }];
+            posData = [{ market: "", newSpos: 0, flyer: 0, stickers: 0, repaired: 0, faultySmart: 0, faultyTpos: 0, faultyMpos: 0, repairedTpos: 0 }];
             renderShipmentPairs();
             renderPosTable();
             showMessage("All data has been reset", "alert-success");
